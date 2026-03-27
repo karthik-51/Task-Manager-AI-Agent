@@ -6,7 +6,7 @@ from analyzers.rules import DOCKER_RULES, JENKINS_RULES
 class IncidentDetector:
     @staticmethod
     def _extract_message(source: Dict[str, Any]) -> str:
-        parts = []
+        parts: List[str] = []
 
         for key in ["log", "message", "msg"]:
             value = source.get(key)
@@ -29,7 +29,6 @@ class IncidentDetector:
 
     def detect_from_source(self, source: Dict[str, Any], source_kind: str) -> Optional[Dict[str, Any]]:
         message = self._extract_message(source)
-
         rules = DOCKER_RULES if source_kind == "docker" else JENKINS_RULES
         matched_rule = self._match_rules(message, rules)
 

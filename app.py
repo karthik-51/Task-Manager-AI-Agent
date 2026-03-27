@@ -1,5 +1,5 @@
 import time
-from typing import Dict, Set, Tuple
+from typing import Dict, Tuple
 
 from analyzers.formatter import build_email_body, build_email_subject
 from clients.smtp_client import SMTPClient
@@ -11,14 +11,13 @@ class AlertService:
     def __init__(self) -> None:
         self.smtp_client = SMTPClient()
         self.logger = get_logger("alert_service")
-        self.sent_cache: Set[Tuple[str, str, str]] = set()
         self.last_sent_time: Dict[Tuple[str, str, str], float] = {}
 
     def _cache_key(self, incident: Dict) -> Tuple[str, str, str]:
         return (
-            incident["rule_name"],
-            incident["component"],
-            incident["message"][:120],
+            incident.get("rule_name", "unknown"),
+            incident.get("affected_component", incident.get("component", "unknown")),
+            incident.get("source_file", "unknown"),
         )
 
     def should_send(self, incident: Dict) -> bool:
@@ -31,16 +30,15 @@ class AlertService:
 
         return (now - last_sent) >= Settings.ALERT_COOLDOWN_SECONDS
 
-    def send_alert(self, incident: Dict) -> None:
-        key = self._cache_key(incident)
-
+    def send_alert(self, incident: Dict) -> bool:
         if not self.should_send(incident):
             self.logger.info("Skipping duplicate alert within cooldown window")
-            return
+            return False
 
         subject = build_email_subject(incident)
         body = build_email_body(incident)
 
         self.smtp_client.send_email(subject, body)
-        self.last_sent_time[key] = time.time()
+        self.last_sent_time[self._cache_key(incident)] = time.time()
         self.logger.info("Alert email sent successfully")
+        return True

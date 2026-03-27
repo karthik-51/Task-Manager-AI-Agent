@@ -1,46 +1,48 @@
-import time
-from typing import Dict, Set, Tuple
-
-from analyzers.formatter import build_email_body, build_email_subject
-from clients.smtp_client import SMTPClient
-from config.settings import Settings
-from utils.logger import get_logger
+from typing import Dict
 
 
-class AlertService:
-    def __init__(self) -> None:
-        self.smtp_client = SMTPClient()
-        self.logger = get_logger("alert_service")
-        self.sent_cache: Set[Tuple[str, str, str]] = set()
-        self.last_sent_time: Dict[Tuple[str, str, str], float] = {}
+def build_email_subject(incident: Dict) -> str:
+    severity = incident.get("severity", "unknown").upper()
+    component = incident.get("affected_component", incident.get("component", "unknown"))
+    return f"[{severity}] {component} incident detected"
 
-    def _cache_key(self, incident: Dict) -> Tuple[str, str, str]:
-        return (
-            incident["rule_name"],
-            incident["component"],
-            incident["message"][:120],
-        )
 
-    def should_send(self, incident: Dict) -> bool:
-        key = self._cache_key(incident)
-        now = time.time()
-        last_sent = self.last_sent_time.get(key)
+def build_email_body(incident: Dict) -> str:
+    recommendations = incident.get("recommended_action", [])
+    recommendation_text = "\n".join(
+        [f"{idx + 1}. {item}" for idx, item in enumerate(recommendations)]
+    ) or "1. Review logs in OpenSearch Dashboards"
 
-        if last_sent is None:
-            return True
+    return f"""Incident Summary
+{incident.get('summary', 'No summary available')}
 
-        return (now - last_sent) >= Settings.ALERT_COOLDOWN_SECONDS
+Severity:
+{incident.get('severity', 'unknown')}
 
-    def send_alert(self, incident: Dict) -> None:
-        key = self._cache_key(incident)
+Affected Component:
+{incident.get('affected_component', incident.get('component', 'unknown'))}
 
-        if not self.should_send(incident):
-            self.logger.info("Skipping duplicate alert within cooldown window")
-            return
+Rule:
+{incident.get('rule_name', 'unknown')}
 
-        subject = build_email_subject(incident)
-        body = build_email_body(incident)
+Source:
+{incident.get('source_kind', 'unknown')}
 
-        self.smtp_client.send_email(subject, body)
-        self.last_sent_time[key] = time.time()
-        self.logger.info("Alert email sent successfully")
+Host:
+{incident.get('host', 'unknown')}
+
+Source File:
+{incident.get('source_file', 'unknown')}
+
+Time:
+{incident.get('timestamp', 'unknown')}
+
+Match Count:
+{incident.get('match_count', 0)}
+
+Likely Root Cause:
+{incident.get('root_cause', 'Unknown')}
+
+Recommended Actions:
+{recommendation_text}
+"""

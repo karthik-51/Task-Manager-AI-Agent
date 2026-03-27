@@ -20,14 +20,21 @@ class Settings:
 
     OPENSEARCH_DOCKER_INDEX = os.getenv("OPENSEARCH_DOCKER_INDEX", "task-deploy-docker-*")
     OPENSEARCH_JENKINS_INDEX = os.getenv("OPENSEARCH_JENKINS_INDEX", "jenkins-logs-*")
+    OPENSEARCH_INCIDENT_INDEX = os.getenv("OPENSEARCH_INCIDENT_INDEX", "ai-agent-incidents")
 
     SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
     SMTP_USER = os.getenv("SMTP_USER", "")
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
     ALERT_FROM = os.getenv("ALERT_FROM", SMTP_USER)
-    ALERT_TO = [email.strip() for email in os.getenv("ALERT_TO", "").split(",") if email.strip()]
+    ALERT_TO = [e.strip() for e in os.getenv("ALERT_TO", "").split(",") if e.strip()]
 
     POLL_INTERVAL_SECONDS = int(os.getenv("POLL_INTERVAL_SECONDS", "60"))
-    LOG_FETCH_SIZE = int(os.getenv("LOG_FETCH_SIZE", "200"))
-    ALERT_COOLDOWN_SECONDS = int(os.getenv("ALERT_COOLDOWN_SECONDS", "600"))
+    LOG_FETCH_SIZE = int(os.getenv("LOG_FETCH_SIZE", "100"))
+    LOG_LOOKBACK_MINUTES = int(os.getenv("LOG_LOOKBACK_MINUTES", "5"))
+    ALERT_COOLDOWN_SECONDS = int(os.getenv("ALERT_COOLDOWN_SECONDS", "1800"))
+
+    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    OLLAMA_TIMEOUT_SECONDS = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "60"))
+    OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "10m")

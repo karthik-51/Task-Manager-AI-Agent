@@ -2,39 +2,47 @@ from typing import Dict
 
 
 def build_email_subject(incident: Dict) -> str:
-    return f"[{incident['severity'].upper()}] {incident['component']} issue detected"
+    severity = incident.get("severity", "unknown").upper()
+    component = incident.get("affected_component", incident.get("component", "unknown"))
+    return f"[{severity}] {component} incident detected"
 
 
 def build_email_body(incident: Dict) -> str:
+    recommendations = incident.get("recommended_action", [])
+    recommendation_text = "\n".join(
+        [f"{idx + 1}. {item}" for idx, item in enumerate(recommendations)]
+    ) or "1. Review logs in OpenSearch Dashboards"
+
     return f"""Incident Summary
-A log pattern matched one of the AI agent monitoring rules.
+{incident.get('summary', 'No summary available')}
 
 Severity:
-{incident['severity']}
+{incident.get('severity', 'unknown')}
 
-Component:
-{incident['component']}
+Affected Component:
+{incident.get('affected_component', incident.get('component', 'unknown'))}
 
 Rule:
-{incident['rule_name']}
+{incident.get('rule_name', 'unknown')}
 
 Source:
-{incident['source_kind']}
+{incident.get('source_kind', 'unknown')}
 
 Host:
-{incident['host']}
-
-Time:
-{incident['timestamp']}
+{incident.get('host', 'unknown')}
 
 Source File:
-{incident['source_file']}
+{incident.get('source_file', 'unknown')}
 
-Detected Message:
-{incident['message']}
+Time:
+{incident.get('timestamp', 'unknown')}
 
-Recommended Next Checks:
-1. Review the recent logs in OpenSearch Dashboards
-2. Check the affected container or Jenkins stage
-3. Verify environment variables, connectivity, and recent deployment changes
+Match Count:
+{incident.get('match_count', 0)}
+
+Likely Root Cause:
+{incident.get('root_cause', 'Unknown')}
+
+Recommended Actions:
+{recommendation_text}
 """
